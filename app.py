@@ -1213,7 +1213,8 @@ def display_insights_section():
         cols = st.columns(7)
         for i, col in enumerate(cols):
             try:
-                day_data = week_data[week_data['date'].dt.weekday == i].iloc[0]
+                # This is the fixed line. Instead of using .dt accessor, we use standard index/filtering
+                day_data = week_data[pd.to_datetime(week_data['date']).dt.weekday == i].iloc[0]
                 
                 col.markdown(
                     f"""<div style="background-color: {color_map[day_data['category']]}; 
