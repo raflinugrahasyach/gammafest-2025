@@ -259,6 +259,11 @@ def evaluate_model(model, X_te, y_te, scaler_y):
 
 def make_forecast(model, df, timesteps, future_steps, scaler_X, scaler_y, start_date=None):
     """Make forecast for future days"""
+    # Check if scalers are properly initialized
+    if scaler_X is None or scaler_y is None:
+        st.error("Model scalers are not properly initialized. Please retrain the model.")
+        return None, None
+        
     if start_date is None:
         # Use the last available data point
         last_X = df[['pm10', 'doy_sin', 'doy_cos', 'dow']].values[-timesteps:]
@@ -270,15 +275,21 @@ def make_forecast(model, df, timesteps, future_steps, scaler_X, scaler_y, start_
             return None, None
         last_X = df_filtered[['pm10', 'doy_sin', 'doy_cos', 'dow']].values[-timesteps:]
     
-    # Prepare encoder input
-    enc_input = scaler_X.transform(last_X).reshape(1, timesteps, 4, 1)
-    
-    # Set initial decoder input with the latest actual value
-    dec_input = np.zeros((1, future_steps, 1))
-    if start_date is None:
-        dec_input[0, 0, 0] = scaler_y.transform([[df['pm10'].iloc[-1]]])[0, 0]
-    else:
-        dec_input[0, 0, 0] = scaler_y.transform([[df_filtered['pm10'].iloc[-1]]])[0, 0]
+    try:
+        # Prepare encoder input
+        enc_input = scaler_X.transform(last_X).reshape(1, timesteps, 4, 1)
+        
+        # Set initial decoder input with the latest actual value
+        dec_input = np.zeros((1, future_steps, 1))
+        if start_date is None:
+            dec_input[0, 0, 0] = scaler_y.transform([[df['pm10'].iloc[-1]]])[0, 0]
+        else:
+            dec_input[0, 0, 0] = scaler_y.transform([[df_filtered['pm10'].iloc[-1]]])[0, 0]
+        
+        # Rest of the function...
+    except Exception as e:
+        st.error(f"Error during forecasting: {str(e)}")
+        return None, None
     
     # Generate autoregressive predictions
     pred = []
@@ -746,9 +757,9 @@ def display_model_section(df):
         st.session_state.evaluation = None
     
     # Train model when button is clicked
-    # Train model when button is clicked
-    if train_button:
-        with st.spinner("Building and training CNN-LSTM model..."):
+if train_button:
+    with st.spinner("Building and training CNN-LSTM model..."):
+        try:
             # Build model
             st.session_state.model = build_cnn_lstm_model(timesteps, n_feats, future_steps)
             
@@ -773,6 +784,8 @@ def display_model_section(df):
             )
             
             st.success("✅ Model training complete!")
+        except Exception as e:
+            st.error(f"Error during model training: {str(e)}")
     
     # Display training results if model exists
     if st.session_state.model is not None and st.session_state.history is not None:
@@ -952,6 +965,11 @@ def display_forecasting_section(df):
     # Check if model exists
     if st.session_state.model is None:
         st.warning("⚠️ Please train a model first before using the forecasting tools.")
+        return
+    
+    # Check if scalers exist
+    if not hasattr(st.session_state, 'scaler_X') or not hasattr(st.session_state, 'scaler_y'):
+        st.warning("⚠️ Model scalers not found. Please retrain the model.")
         return
     
     st.markdown("""
