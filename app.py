@@ -757,35 +757,35 @@ def display_model_section(df):
         st.session_state.evaluation = None
     
     # Train model when button is clicked
-if train_button:
-    with st.spinner("Building and training CNN-LSTM model..."):
-        try:
-            # Build model
-            st.session_state.model = build_cnn_lstm_model(timesteps, n_feats, future_steps)
-            
-            # Store scalers in session state
-            st.session_state.scaler_X = scaler_X
-            st.session_state.scaler_y = scaler_y
-            
-            # Train model
-            st.session_state.history = train_model(
-                st.session_state.model, 
-                X_tr, y_tr, 
-                epochs=epochs, 
-                batch_size=batch_size, 
-                val_split=val_split
-            )
-            
-            # Evaluate model
-            st.session_state.evaluation = evaluate_model(
-                st.session_state.model, 
-                X_te, y_te, 
-                scaler_y
-            )
-            
-            st.success("✅ Model training complete!")
-        except Exception as e:
-            st.error(f"Error during model training: {str(e)}")
+    if train_button:
+        with st.spinner("Building and training CNN-LSTM model..."):
+            try:
+                # Build model
+                st.session_state.model = build_cnn_lstm_model(timesteps, n_feats, future_steps)
+                
+                # Store scalers in session state
+                st.session_state.scaler_X = scaler_X
+                st.session_state.scaler_y = scaler_y
+                
+                # Train model
+                st.session_state.history = train_model(
+                    st.session_state.model, 
+                    X_tr, y_tr, 
+                    epochs=epochs, 
+                    batch_size=batch_size, 
+                    val_split=val_split
+                )
+                
+                # Evaluate model
+                st.session_state.evaluation = evaluate_model(
+                    st.session_state.model, 
+                    X_te, y_te, 
+                    scaler_y
+                )
+                
+                st.success("✅ Model training complete!")
+            except Exception as e:
+                st.error(f"Error during model training: {str(e)}")
     
     # Display training results if model exists
     if st.session_state.model is not None and st.session_state.history is not None:
