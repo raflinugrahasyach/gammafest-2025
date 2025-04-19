@@ -311,7 +311,11 @@ def create_anomaly_detection(true_values, pred_values, threshold=1.5):
     std_residual = np.std(residuals)
     
     # Define anomalies as points where the residual is beyond threshold * std from mean
+    # Make sure to check that indices are valid
     anomalies = np.where(np.abs(residuals - mean_residual) > threshold * std_residual)[0]
+    
+    # Filter anomalies to ensure they are within bounds
+    anomalies = anomalies[anomalies < len(true_values)]
     
     return anomalies, residuals
 
@@ -742,10 +746,15 @@ def display_model_section(df):
         st.session_state.evaluation = None
     
     # Train model when button is clicked
+    # Train model when button is clicked
     if train_button:
         with st.spinner("Building and training CNN-LSTM model..."):
             # Build model
             st.session_state.model = build_cnn_lstm_model(timesteps, n_feats, future_steps)
+            
+            # Store scalers in session state
+            st.session_state.scaler_X = scaler_X
+            st.session_state.scaler_y = scaler_y
             
             # Train model
             st.session_state.history = train_model(
@@ -921,15 +930,20 @@ def display_model_section(df):
                 st.markdown("#### Detected Anomalies")
                 anomaly_data = []
                 for idx in anomalies:
-                    anomaly_data.append({
-                        'Date': test_dates[idx],
-                        'Actual': st.session_state.evaluation['true_values'][idx],
-                        'Predicted': st.session_state.evaluation['pred_values'][idx],
-                        'Error': residuals[idx]
-                    })
+                    # Check if the index is within bounds of test_dates
+                    if 0 <= idx < len(test_dates):
+                        anomaly_data.append({
+                            'Date': test_dates[idx],
+                            'Actual': st.session_state.evaluation['true_values'][idx],
+                            'Predicted': st.session_state.evaluation['pred_values'][idx],
+                            'Error': residuals[idx]
+                        })
                 
-                anomaly_df = pd.DataFrame(anomaly_data)
-                st.dataframe(anomaly_df, hide_index=True, use_container_width=True)
+                if anomaly_data:  # Only create dataframe if there's data
+                    anomaly_df = pd.DataFrame(anomaly_data)
+                    st.dataframe(anomaly_df, hide_index=True, use_container_width=True)
+                else:
+                    st.info("No anomalies found within the test date range.")
 
 def display_forecasting_section(df):
     """Display the forecasting section"""
