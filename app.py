@@ -19,6 +19,8 @@ import base64
 from PIL import Image
 import time
 
+from homepage import display_homepage
+
 # Set page configuration
 st.set_page_config(
     page_title="PM10 Forecasting - Jakarta Air Quality",
